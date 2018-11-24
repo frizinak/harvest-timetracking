@@ -57,7 +57,7 @@ func (d Duration) String() string {
 	s := time.Duration(d)
 	h := s / time.Hour
 	m := (s % time.Hour) / time.Minute
-	return fmt.Sprintf("%du%02d", h, m)
+	return fmt.Sprintf("%dh%02d", h, m)
 }
 
 func main() {
