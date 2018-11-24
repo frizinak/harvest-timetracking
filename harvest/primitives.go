@@ -2,6 +2,7 @@ package harvest
 
 import (
 	"encoding/json"
+	"net/url"
 	"time"
 )
 
@@ -67,6 +68,24 @@ func (d *DurationHours) UnmarshalJSON(b []byte) error {
 
 	*d = DurationHours{time.Duration(s * float64(time.Hour))}
 
+	return nil
+}
+
+type URL struct {
+	url.URL
+}
+
+func (u *URL) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	p, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+	*u = URL{*p}
 	return nil
 }
 
