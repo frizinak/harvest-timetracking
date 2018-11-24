@@ -16,10 +16,13 @@ Usage of timetracking:
     	Amount of days to retrieve time entries for (default 20)
   -from string
     	Custom date to start at [YYYY-MM-DD or end-of-week or next-week]
+  -group string
+    	Group results by day|week|month|year (default "day")
   -hours int
     	Amount of hours in a single workweek (default: from harvest api)
   -uid int
     	The user id of the user to fetch time entries for
+  -v	Print version and exit
   -worked
     	Only track days that have tracking entries
 ```
@@ -75,7 +78,7 @@ Total: 42h32 / 76h00 (55.97%)
 
 How many hours have I tracked in the last 5 days on which I actually worked?
 ```
-$> timetracking -days 5 -worked=true
+$> timetracking -days 5
 Running for Bob
 ID: 123456
 Week: 38h00
@@ -115,10 +118,3 @@ Mon Nov 12 2018 -  5h53
 Total: 50h22 / 76h00 (66.28%)
 25h37 remaining...
 ```
-
-
-# Know issues / Todos
-
-- Not everyone has a monday-to-friday workweek.
-- All the other apis
-

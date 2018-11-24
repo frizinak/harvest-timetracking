@@ -2,6 +2,7 @@ package harvest
 
 import (
 	"net/url"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -64,39 +65,85 @@ type TimeEntriesResponse struct {
 	TimeEntries  TimeEntries `json:"time_entries"`
 }
 
+type Grouper func(t *TimeEntry) (key string, include bool)
+
 type TimeEntries []*TimeEntry
 
-func (t TimeEntries) Days(includeRunning bool) []*Day {
-	d := make([]*Day, 0, len(t))
+func (t TimeEntries) SortSpent() TimeEntries {
+	sort.SliceStable(
+		t,
+		func(i, j int) bool {
+			ie, je := t[i], t[j]
+			if ie.SpentDate == nil {
+				return je.SpentDate == nil
+			} else if je.SpentDate == nil {
+				return ie.SpentDate != nil
+			}
+
+			return !ie.SpentDate.Before(je.SpentDate.Time)
+		},
+	)
+
+	return t
+}
+
+func (t TimeEntries) Group(groupBy Grouper) Grouped {
+	d := make(Grouped, 0, len(t))
 	lookup := make(map[string]int)
 	for _, e := range t {
-		if e.SpentDate == nil {
-			continue
-		}
-		if !includeRunning && e.Running {
+		k, ok := groupBy(e)
+		if !ok {
 			continue
 		}
 
-		df := e.SpentDate.Format(timeFormatDate)
-		if _, ok := lookup[df]; !ok {
-			lookup[df] = len(d)
-			d = append(d, &Day{SpentDate: e.SpentDate.Time})
+		if _, ok := lookup[k]; !ok {
+			lookup[k] = len(d)
+			var spent time.Time
+			if e.SpentDate != nil {
+				spent = e.SpentDate.Time
+
+			}
+			d = append(
+				d,
+				&Group{
+					FirstSpentDate: spent,
+					SpentDates:     make([]time.Time, 0, 1),
+				},
+			)
 		}
 
-		day := d[lookup[df]]
-		day.Hours += e.Hours.Duration
+		group := d[lookup[k]]
+		group.Hours += e.Hours.Duration
+		if e.SpentDate != nil {
+			group.SpentDates = append(group.SpentDates, e.SpentDate.Time)
+		}
 		if e.Running {
-			day.Running = true
+			group.Running = true
 		}
 	}
 
 	return d
 }
 
-type Day struct {
-	Running   bool
-	SpentDate time.Time
-	Hours     time.Duration
+type Grouped []*Group
+
+func (g Grouped) SortSpent() Grouped {
+	sort.SliceStable(
+		g,
+		func(i, j int) bool {
+			ie, je := g[i], g[j]
+			return !ie.FirstSpentDate.Before(je.FirstSpentDate)
+		},
+	)
+
+	return g
+}
+
+type Group struct {
+	Running        bool
+	FirstSpentDate time.Time
+	SpentDates     []time.Time
+	Hours          time.Duration
 }
 
 type TimeEntry struct {
