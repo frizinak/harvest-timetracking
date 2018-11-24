@@ -10,6 +10,8 @@ import (
 	"github.com/frizinak/harvest-timetracking/config"
 )
 
+var v = "unknown"
+
 const (
 	endOfWeek    = "end-of-week"
 	nextWeek     = "next-week"
@@ -62,23 +64,7 @@ func (d Duration) String() string {
 
 func main() {
 	l := log.New(os.Stdout, "", 0)
-	config, err := getConfig(l)
-	if err != nil {
-		l.Println(err)
-		os.Exit(1)
-	}
-
-	if config == nil {
-		os.Exit(1)
-	}
-
-	t, err := New(l, config)
-	if err != nil {
-		l.Println(err)
-		os.Exit(1)
-	}
-
-	from := time.Now()
+	version := flag.Bool("v", false, "Print version and exit")
 	var userID int
 	var days int
 	var customCapacity int
@@ -101,6 +87,29 @@ func main() {
 	//userName := flag.String("user", "", "The user name to fetch time entries for")
 	flag.Parse()
 
+	if *version {
+		l.Println(v)
+		os.Exit(0)
+	}
+
+	config, err := getConfig(l)
+	if err != nil {
+		l.Println(err)
+		os.Exit(1)
+	}
+
+	if config == nil {
+		os.Exit(1)
+	}
+
+	t, err := New(l, config)
+	if err != nil {
+		l.Println(err)
+		os.Exit(1)
+	}
+
+	from := time.Now()
+
 	if err := t.SetUID(userID); err != nil {
 		l.Println(err)
 		os.Exit(1)
@@ -110,7 +119,7 @@ func main() {
 	if customCapacity != 0 {
 		capacity = Duration(customCapacity) * Duration(time.Hour)
 	}
-	daysCapacity := Duration(float64(capacity) * float64(days/5))
+	daysCapacity := Duration(float64(capacity) * float64(days) / 5)
 
 	switch {
 	case customDate == endOfWeek || customDate == nextWeek:

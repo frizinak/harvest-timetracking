@@ -15,19 +15,12 @@ clean:
 	rm -r dist
 
 dist/timetracking/native: $(SRC)
-	go build -o $@ cmd/timetracking/*.go
-
-dist: $(SRC)
-	gox \
-		-osarch="$(CROSS)" \
-		-output="dist/{{.OS}}.{{.Arch}}" \
-		./cmd/slek
-
-	touch dist
+	go build -ldflags="-X main.v=$(shell git describe)" -o $@ cmd/timetracking/*.go
 
 $(TIMETRACKING_CROSS): $(SRC)
 	gox \
 		-osarch="$(shell echo "$@" | cut -d'/' -f3- | sed 's/\./\//')" \
+		-ldflags="-X main.v=$(shell git describe)" \
 		-output="$@" \
 		./cmd/timetracking
 	if [ -f "$@.exe" ]; then mv "$@.exe" "$@"; fi
