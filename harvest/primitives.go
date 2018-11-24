@@ -88,19 +88,19 @@ type ProjectRef struct {
 }
 
 type UserAssignment struct {
-	ID               int       `json:"id"`
-	IsProjectManager bool      `json:"is_project_manager"`
-	IsActive         bool      `json:"is_active"`
-	Budget           *Budget   `json:"budget"`
-	CreatedAt        *DateTime `json:"created_at"`
-	UpdatedAt        *DateTime `json:"updated_at"`
-	HourlyRate       float64   `json:"hourly_rate"`
+	ID             int       `json:"id"`
+	ProjectManager bool      `json:"is_project_manager"`
+	Active         bool      `json:"is_active"`
+	Budget         *Budget   `json:"budget"`
+	CreatedAt      *DateTime `json:"created_at"`
+	UpdatedAt      *DateTime `json:"updated_at"`
+	HourlyRate     float64   `json:"hourly_rate"`
 }
 
 type TaskAssignment struct {
 	ID         int       `json:"id"`
 	Billable   bool      `json:"billable"`
-	IsActive   bool      `json:"is_active"`
+	Active     bool      `json:"is_active"`
 	CreatedAt  *DateTime `json:"created_at"`
 	UpdatedAt  *DateTime `json:"updated_at"`
 	HourlyRate float64   `json:"hourly_rate"`

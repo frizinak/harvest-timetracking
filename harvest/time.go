@@ -10,8 +10,8 @@ type TimeEntriesParams struct {
 	UserID       *int
 	ClientID     *int
 	ProjectID    *int
-	IsBilled     *bool
-	IsRunning    *bool
+	Billed       *bool
+	Running      *bool
 	UpdatedSince *time.Time
 	From         *time.Time
 	To           *time.Time
@@ -32,11 +32,11 @@ func (t *TimeEntriesParams) Values() url.Values {
 	if t.ProjectID != nil {
 		v.Set("project_id", strconv.Itoa(*t.ProjectID))
 	}
-	if t.IsBilled != nil {
-		v.Set("is_billed", boolToString(*t.IsBilled))
+	if t.Billed != nil {
+		v.Set("is_billed", boolToString(*t.Billed))
 	}
-	if t.IsRunning != nil {
-		v.Set("is_running", boolToString(*t.IsRunning))
+	if t.Running != nil {
+		v.Set("is_running", boolToString(*t.Running))
 	}
 	if t.UpdatedSince != nil {
 		v.Set("updated_since", t.UpdatedSince.Format(timeFormatDateTime))
@@ -73,7 +73,7 @@ func (t TimeEntries) Days(includeRunning bool) []*Day {
 		if e.SpentDate == nil {
 			continue
 		}
-		if !includeRunning && e.IsRunning {
+		if !includeRunning && e.Running {
 			continue
 		}
 
@@ -85,7 +85,7 @@ func (t TimeEntries) Days(includeRunning bool) []*Day {
 
 		day := d[lookup[df]]
 		day.Hours += e.Hours.Duration
-		if e.IsRunning {
+		if e.Running {
 			day.Running = true
 		}
 	}
@@ -113,15 +113,15 @@ type TimeEntry struct {
 
 	Hours          DurationHours `json:"hours"`
 	Notes          string        `json:"notes"`
-	IsLocked       bool          `json:"is_locked"`
+	Locked         bool          `json:"is_locked"`
 	LockedReason   string        `json:"locked_reason"`
-	IsClosed       bool          `json:"is_closed"`
-	IsBilled       bool          `json:"is_billed"`
+	Closed         bool          `json:"is_closed"`
+	Billed         bool          `json:"is_billed"`
 	SpentDate      *Date         `json:"spent_date"`
 	TimerStartedAt *DateTime     `json:"timer_started_at"`
 	StartedTime    string        `json:"started_time"`
 	EndedTime      string        `json:"ended_time"`
-	IsRunning      bool          `json:"is_running"`
+	Running        bool          `json:"is_running"`
 	Billable       bool          `json:"billable"`
 	Budgeted       bool          `json:"budgeted"`
 	BillableRate   float64       `json:"billable_rate"`
