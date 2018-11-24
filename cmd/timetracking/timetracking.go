@@ -72,7 +72,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// now := time.Now()
 	t, err := New(l, config)
 	if err != nil {
 		l.Println(err)
@@ -107,9 +106,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	capacity := t.User().Capacity()
+	capacity := Duration(t.User().Capacity())
 	if customCapacity != 0 {
-		capacity = time.Duration(customCapacity) * time.Hour
+		capacity = Duration(customCapacity) * Duration(time.Hour)
 	}
 	daysCapacity := Duration(float64(capacity) * float64(days/5))
 
