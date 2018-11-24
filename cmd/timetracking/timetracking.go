@@ -11,26 +11,41 @@ import (
 )
 
 const (
-	endOfWeek = "end-of-week"
-	nextWeek  = "next-week"
+	endOfWeek    = "end-of-week"
+	nextWeek     = "next-week"
+	defaultToken = "-- your account token --"
 )
 
 func getConfig(l *log.Logger) (*Config, error) {
 	confLoader, err := config.DotFile(
 		".timetracking",
-		&Config{"your account id", "your token", []string{}, nil},
+		&Config{"-- your account id --", defaultToken, []string{}, nil},
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	conf := &Config{}
-	if err := confLoader.Read(conf); os.IsNotExist(err) {
+	if err := confLoader.Read(conf); err != nil {
+		if os.IsNotExist(err) {
+			l.Printf(
+				"Config file %s does not exist, creating example. [https://id.getharvest.com/developers to create an access token]",
+				confLoader.Path(),
+			)
+			return nil, confLoader.CreateDefault()
+		}
+
+		l.Printf("Failed to parse config")
+		return nil, err
+	}
+
+	if conf.Token == defaultToken {
 		l.Printf(
-			"Config file %s does not exist, creating example.",
+			"You should fill in your access token and account id in '%s'",
 			confLoader.Path(),
 		)
-		return nil, confLoader.CreateDefault()
+
+		return nil, nil
 	}
 
 	return conf, nil
@@ -60,6 +75,7 @@ func main() {
 	// now := time.Now()
 	t, err := New(l, config)
 	if err != nil {
+		l.Println(err)
 		os.Exit(1)
 	}
 

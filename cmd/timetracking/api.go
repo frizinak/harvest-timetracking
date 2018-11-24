@@ -18,14 +18,20 @@ type Config struct {
 	excludedMap   map[string]struct{}
 }
 
-func (c *Config) Excluded(t time.Time) bool {
-	if len(c.ExcludedDates) != len(c.excludedMap) || c.excludedMap == nil {
-		c.excludedMap = make(map[string]struct{})
-		for _, v := range c.ExcludedDates {
-			c.excludedMap[v] = struct{}{}
+func (c *Config) Validate() error {
+	c.excludedMap = make(map[string]struct{})
+	for _, v := range c.ExcludedDates {
+		c.excludedMap[v] = struct{}{}
+		_, err := time.Parse(dateFormat, v)
+		if err != nil {
+			return err
 		}
 	}
 
+	return nil
+}
+
+func (c *Config) Excluded(t time.Time) bool {
 	_, ok := c.excludedMap[t.Format(dateFormat)]
 	return ok
 }
