@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	timeFormatDate     = "2006-01-02"
-	timeFormatDateTime = "2006-01-02T15:04:05Z07:00"
+	TimeFormatDate     = "2006-01-02"
+	TimeFormatDateTime = "2006-01-02T15:04:05Z07:00"
 )
 
 func boolToString(b bool) string {
@@ -37,7 +37,7 @@ type Date struct {
 }
 
 func (d *Date) UnmarshalJSON(b []byte) error {
-	nd, err := unmarshalDate(b, timeFormatDate)
+	nd, err := unmarshalDate(b, TimeFormatDate)
 	if nd != nil {
 		*d = Date{*nd}
 	}
@@ -49,11 +49,26 @@ type DateTime struct {
 }
 
 func (d *DateTime) UnmarshalJSON(b []byte) error {
-	nd, err := unmarshalDate(b, timeFormatDateTime)
+	nd, err := unmarshalDate(b, TimeFormatDateTime)
 	if nd != nil {
 		*d = DateTime{*nd}
 	}
 	return err
+}
+
+type DurationSeconds struct {
+	time.Duration
+}
+
+func (d *DurationSeconds) UnmarshalJSON(b []byte) error {
+	var s float64
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	*d = DurationSeconds{time.Duration(s * float64(time.Second))}
+
+	return nil
 }
 
 type DurationHours struct {

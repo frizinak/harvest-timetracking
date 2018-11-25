@@ -3,80 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"os"
 	"time"
-
-	"github.com/frizinak/harvest-timetracking/config"
 )
 
-var v = "unknown"
-
-const (
-	endOfWeek    = "end-of-week"
-	nextWeek     = "next-week"
-	defaultToken = "-- your account token --"
-
-	groupByDay   = "day"
-	groupByWeek  = "week"
-	groupByMonth = "month"
-	groupByYear  = "year"
-)
-
-func getConfig(l *log.Logger) (*Config, error) {
-	confLoader, err := config.DotFile(
-		".timetracking",
-		&Config{
-			"-- your account id --",
-			defaultToken,
-			[]string{},
-			[]string{"saturday", "sunday"},
-			nil,
-			nil,
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	conf := &Config{}
-	if err := confLoader.Read(conf); err != nil {
-		if os.IsNotExist(err) {
-			l.Printf(
-				"Config file %s does not exist, creating example. [https://id.getharvest.com/developers to create an access token]",
-				confLoader.Path(),
-			)
-			return nil, confLoader.CreateDefault()
-		}
-
-		l.Printf("Failed to parse config")
-		return nil, err
-	}
-
-	if conf.Token == defaultToken {
-		l.Printf(
-			"You should fill in your access token and account id in '%s'",
-			confLoader.Path(),
-		)
-
-		return nil, nil
-	}
-
-	return conf, nil
-}
-
-type Duration time.Duration
-
-func (d Duration) String() string {
-	s := time.Duration(d)
-	h := s / time.Hour
-	m := (s % time.Hour) / time.Minute
-	return fmt.Sprintf("%dh%02d", h, m)
-}
-
-func main() {
-	l := log.New(os.Stdout, "", 0)
-	version := flag.Bool("v", false, "Print version and exit")
+func commandTracking(c *Command) (int, error) {
 	var userID int
 	var days int
 	var customCapacity int
@@ -112,25 +42,18 @@ func main() {
 	//userName := flag.String("user", "", "The user name to fetch time entries for")
 	flag.Parse()
 
-	if *version {
-		l.Println(v)
-		os.Exit(0)
-	}
-
-	config, err := getConfig(l)
+	_, config, err := getConfig(c.l)
 	if err != nil {
-		l.Println(err)
-		os.Exit(1)
+		return 1, err
 	}
 
 	if config == nil {
-		os.Exit(1)
+		return 1, nil
 	}
 
-	t, err := New(l, config)
+	t, err := New(c.l, config)
 	if err != nil {
-		l.Println(err)
-		os.Exit(1)
+		return 1, err
 	}
 
 	switch group {
@@ -139,8 +62,7 @@ func main() {
 	case groupByMonth:
 	case groupByYear:
 	default:
-		l.Printf("Invalid group '%s'", group)
-		os.Exit(1)
+		return 1, fmt.Errorf("Invalid group '%s'", group)
 	}
 
 	from := time.Now()
@@ -158,15 +80,13 @@ func main() {
 	case customDate != "":
 		f, err := time.Parse(dateFormat, customDate)
 		if err != nil {
-			l.Printf("Invalid date '%s' expected YYYY-mm-dd", customDate)
-			os.Exit(1)
+			return 1, fmt.Errorf("Invalid date '%s' expected YYYY-mm-dd", customDate)
 		}
 		from = f
 	}
 
 	if err := t.SetUID(userID); err != nil {
-		l.Println(err)
-		os.Exit(1)
+		return 1, err
 	}
 
 	workWeek := float64(config.WorkWeek())
@@ -182,7 +102,7 @@ func main() {
 		onlyWorkedDaysCopy = " (estimate)"
 	}
 
-	l.Printf(
+	c.l.Printf(
 		"Running for %s %s\nID: %d\nWeek: %s\nOver %d days%s: %s\nFrom: %s\n\n",
 		t.User().FirstName,
 		t.User().LastName,
@@ -206,7 +126,7 @@ func main() {
 			days[d.Format(dateFormat)] = struct{}{}
 		}
 		should := Duration(float64(capacity) * float64(len(days)) / workWeek)
-		l.Printf(
+		c.l.Printf(
 			"%s - %5s / %s (%.2f%%)",
 			e.FirstSpentDate.Format("Mon Jan 02 2006"),
 			Duration(e.Hours),
@@ -222,11 +142,13 @@ func main() {
 		diffStr = "target reached!"
 	}
 
-	l.Printf(
+	c.l.Printf(
 		"\nTotal: %s / %s (%.2f%%)\n%s",
 		Duration(sum),
 		daysCapacity,
 		100*float64(sum)/float64(daysCapacity),
 		diffStr,
 	)
+
+	return 0, nil
 }

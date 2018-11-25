@@ -14,17 +14,35 @@ const (
 )
 
 type Harvest struct {
-	client    *http.Client
-	accountID int
-	token     string
+	api Api
 }
 
 func New(accountID int, token string) *Harvest {
-	return &Harvest{http.DefaultClient, accountID, token}
+	return &Harvest{
+		Api{
+			http.DefaultClient,
+			accountID,
+			token,
+			"https://api.harvestapp.com/v2",
+			"Harvest-Account-ID",
+		},
+	}
 }
 
 func (h *Harvest) get(path string, query url.Values, v interface{}) error {
-	u, err := url.Parse(endpoint + path)
+	return h.api.Get(path, query, v)
+}
+
+type Api struct {
+	Client          *http.Client
+	AccountID       int
+	Token           string
+	Endpoint        string
+	AccountIDHeader string
+}
+
+func (a *Api) Get(path string, query url.Values, v interface{}) error {
+	u, err := url.Parse(a.Endpoint + path)
 	if err != nil {
 		return err
 	}
@@ -39,9 +57,9 @@ func (h *Harvest) get(path string, query url.Values, v interface{}) error {
 		return err
 	}
 
-	req.Header.Set("Harvest-Account-ID", strconv.Itoa(h.accountID))
-	req.Header.Set("Authorization", "Bearer "+h.token)
-	res, err := h.client.Do(req)
+	req.Header.Set(a.AccountIDHeader, strconv.Itoa(a.AccountID))
+	req.Header.Set("Authorization", "Bearer "+a.Token)
+	res, err := a.Client.Do(req)
 	if err != nil {
 		return err
 	}

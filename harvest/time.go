@@ -40,13 +40,13 @@ func (t *TimeEntriesParams) Values() url.Values {
 		v.Set("is_running", boolToString(*t.Running))
 	}
 	if t.UpdatedSince != nil {
-		v.Set("updated_since", t.UpdatedSince.Format(timeFormatDateTime))
+		v.Set("updated_since", t.UpdatedSince.Format(TimeFormatDateTime))
 	}
 	if t.From != nil {
-		v.Set("from", t.From.Format(timeFormatDate))
+		v.Set("from", t.From.Format(TimeFormatDate))
 	}
 	if t.To != nil {
-		v.Set("to", t.To.Format(timeFormatDate))
+		v.Set("to", t.To.Format(TimeFormatDate))
 	}
 	if t.Page != nil {
 		v.Set("page", strconv.Itoa(*t.Page))

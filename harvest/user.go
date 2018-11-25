@@ -22,7 +22,7 @@ func (u *UsersParams) Values() url.Values {
 		v.Set("is_active", boolToString(*u.Active))
 	}
 	if u.UpdatedSince != nil {
-		v.Set("updated_since", u.UpdatedSince.Format(timeFormatDateTime))
+		v.Set("updated_since", u.UpdatedSince.Format(TimeFormatDateTime))
 	}
 	if u.Page != nil {
 		v.Set("page", strconv.Itoa(*u.Page))

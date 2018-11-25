@@ -8,18 +8,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frizinak/harvest-timetracking/forecast"
 	"github.com/frizinak/harvest-timetracking/harvest"
 )
 
 const dateFormat = "2006-01-02"
 
 type Config struct {
-	AccountID      string   `json:"account_id"`
-	Token          string   `json:"token"`
-	ExcludedDates  []string `json:"exclude_dates"`
-	WeekdaysOff    []string `json:"weekdays_off"`
-	excludedMap    map[string]struct{}
-	weekdaysOffMap map[time.Weekday]struct{}
+	AccountID         string   `json:"account_id"`
+	ForecastAccountID string   `json:"forecast_account_id"`
+	Token             string   `json:"token"`
+	WeekdaysOff       []string `json:"weekdays_off"`
+	ExcludedDates     []string `json:"exclude_dates"`
+	excludedMap       map[string]struct{}
+	weekdaysOffMap    map[time.Weekday]struct{}
 }
 
 func (c *Config) Validate() error {
@@ -77,10 +79,12 @@ func (c *Config) WorkWeek() int {
 }
 
 type Timetracking struct {
-	l      *log.Logger
-	conf   *Config
-	client *harvest.Harvest
-	user   *harvest.User
+	l            *log.Logger
+	conf         *Config
+	harvest      *harvest.Harvest
+	forecast     *forecast.Forecast
+	user         *harvest.User
+	forecastUser *forecast.User
 }
 
 func New(l *log.Logger, c *Config) (*Timetracking, error) {
@@ -89,22 +93,54 @@ func New(l *log.Logger, c *Config) (*Timetracking, error) {
 		return nil, errors.New("account_id should be a numeric value")
 	}
 
-	return &Timetracking{l: l, conf: c, client: harvest.New(aid, c.Token)}, nil
+	fid := 0
+	if c.ForecastAccountID != "" {
+		fid, err = strconv.Atoi(c.ForecastAccountID)
+		if err != nil {
+			return nil, errors.New("forecast_account_id should be a numeric value or empty")
+		}
+	}
+
+	return &Timetracking{
+		l:        l,
+		conf:     c,
+		harvest:  harvest.New(aid, c.Token),
+		forecast: forecast.New(fid, c.Token),
+	}, nil
 }
 
 func (t *Timetracking) SetUID(uid int) (err error) {
 	t.user = nil
 	if uid == 0 {
-		t.user, err = t.client.GetMe()
+		t.user, err = t.harvest.GetMe()
 		return
 	}
 
-	t.user, err = t.client.GetUser(uid)
+	t.user, err = t.harvest.GetUser(uid)
+	return
+}
+
+func (t *Timetracking) SetForecastUID(uid int) (err error) {
+	t.forecastUser = nil
+	var me *forecast.Me
+	if uid == 0 {
+		me, err = t.forecast.GetMe()
+		if err != nil {
+			return
+		}
+		uid = me.ID
+	}
+
+	t.forecastUser, err = t.forecast.GetUser(uid)
 	return
 }
 
 func (t *Timetracking) User() *harvest.User {
 	return t.user
+}
+
+func (t *Timetracking) ForecastUser() *forecast.User {
+	return t.forecastUser
 }
 
 func (t *Timetracking) GetRecentDaysGrouped(
@@ -188,7 +224,7 @@ func (t *Timetracking) GetRecentDays(
 
 outer:
 	for {
-		res, err := t.client.GetTimeEntries(params)
+		res, err := t.harvest.GetTimeEntries(params)
 		if err != nil {
 			return 0, nil, err
 		}
@@ -219,4 +255,38 @@ outer:
 	}
 
 	return len(counter), entries, nil
+}
+
+func (t *Timetracking) GetAssignmentsByName(projectName string) ([]*forecast.Assignment, error) {
+	if t.forecastUser == nil || t.forecastUser.ID == 0 {
+		return nil, errors.New("No forecast user set")
+	}
+
+	ps, err := t.forecast.GetProjects()
+	if err != nil {
+		return nil, err
+	}
+
+	id := 0
+	for _, p := range ps.Projects {
+		if p.Name == projectName {
+			id = p.ID
+		}
+	}
+
+	if id == 0 {
+		return nil, fmt.Errorf("Could not find project id for a project named '%s'", projectName)
+	}
+
+	as, err := t.forecast.GetAssignments(
+		&forecast.AssignmentsParams{
+			ProjectID: &id,
+			PersonID:  &t.forecastUser.ID,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return as.Assignments, nil
 }
