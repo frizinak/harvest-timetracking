@@ -1,5 +1,5 @@
 SRC := $(shell find . -type f -name '*.go')
-CROSSARCH := amd64 386
+CROSSARCH := amd64
 CROSSOS := darwin linux windows
 TIMETRACKING_CROSS := $(foreach os,$(CROSSOS),$(foreach arch,$(CROSSARCH),dist/timetracking/$(os).$(arch)))
 
