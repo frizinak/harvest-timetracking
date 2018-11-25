@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/frizinak/harvest-timetracking/forecast"
@@ -13,70 +12,6 @@ import (
 )
 
 const dateFormat = "2006-01-02"
-
-type Config struct {
-	AccountID         string   `json:"account_id"`
-	ForecastAccountID string   `json:"forecast_account_id"`
-	Token             string   `json:"token"`
-	WeekdaysOff       []string `json:"weekdays_off"`
-	ExcludedDates     []string `json:"exclude_dates"`
-	excludedMap       map[string]struct{}
-	weekdaysOffMap    map[time.Weekday]struct{}
-}
-
-func (c *Config) Validate() error {
-	c.excludedMap = make(map[string]struct{})
-	for _, v := range c.ExcludedDates {
-		c.excludedMap[v] = struct{}{}
-		_, err := time.Parse(dateFormat, v)
-		if err != nil {
-			return err
-		}
-	}
-
-	c.weekdaysOffMap = make(map[time.Weekday]struct{})
-	wds := map[string]time.Weekday{
-		strings.ToLower(time.Monday.String()):    time.Monday,
-		strings.ToLower(time.Tuesday.String()):   time.Tuesday,
-		strings.ToLower(time.Wednesday.String()): time.Wednesday,
-		strings.ToLower(time.Thursday.String()):  time.Thursday,
-		strings.ToLower(time.Friday.String()):    time.Friday,
-		strings.ToLower(time.Saturday.String()):  time.Saturday,
-		strings.ToLower(time.Sunday.String()):    time.Sunday,
-	}
-	for _, v := range c.WeekdaysOff {
-		wd, ok := wds[strings.ToLower(v)]
-		if !ok {
-			return fmt.Errorf("Invalid weekday '%s'", v)
-		}
-
-		c.weekdaysOffMap[wd] = struct{}{}
-	}
-
-	if len(c.weekdaysOffMap) > 6 {
-		return errors.New("What are you using this program for, if you take every day off?")
-	}
-
-	return nil
-}
-
-func (c *Config) Excluded(t time.Time) bool {
-	_, ok := c.excludedMap[t.Format(dateFormat)]
-	return ok
-}
-
-func (c *Config) Off(t time.Time) bool {
-	_, ok := c.weekdaysOffMap[t.Weekday()]
-	return ok
-}
-
-func (c *Config) AmountOff() int {
-	return len(c.weekdaysOffMap)
-}
-
-func (c *Config) WorkWeek() int {
-	return 7 - len(c.weekdaysOffMap)
-}
 
 type Timetracking struct {
 	l            *log.Logger
@@ -289,4 +224,35 @@ func (t *Timetracking) GetAssignmentsByName(projectName string) ([]*forecast.Ass
 	}
 
 	return as.Assignments, nil
+}
+
+func (t *Timetracking) GetUserProjectAssignments() ([]*harvest.UserAssignment, error) {
+	params := &harvest.UserAssignmentParams{}
+	items := make([]*harvest.UserAssignment, 0)
+	for {
+		res, err := t.harvest.GetUserAssignments(t.User().ID, params)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, res.Assignments...)
+		if res.NextPage == nil {
+			break
+		}
+
+		params.Page = res.NextPage
+	}
+
+	return items, nil
+}
+
+func (t *Timetracking) StartTracker(projectID, taskID int) (*harvest.TimeEntry, error) {
+	return t.harvest.CreateTimeEntry(
+		&harvest.CreateTimeEntryBody{
+			UserID:    &t.User().ID,
+			ProjectID: projectID,
+			TaskID:    taskID,
+			SpentDate: harvest.Date{time.Now()},
+		},
+	)
 }

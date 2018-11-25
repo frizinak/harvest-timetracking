@@ -149,14 +149,14 @@ type Group struct {
 type TimeEntry struct {
 	ID int `json:"id"`
 
-	User              *UserRef           `json:"user"`
-	UserAssignment    *UserAssignment    `json:"user_assignment"`
-	Client            *ClientRef         `json:"client"`
-	Project           *ProjectRef        `json:"project"`
-	Task              *TaskRef           `json:"task"`
-	TaskAssignment    *TaskAssignment    `json:"task"`
-	ExternalReference *ExternalReference `json:"external_reference"`
-	Invoice           *InvoiceRef        `json:"invoice"`
+	User              UserRef           `json:"user"`
+	UserAssignment    UserAssignmentRef `json:"user_assignment"`
+	Client            ClientRef         `json:"client"`
+	Project           ProjectRef        `json:"project"`
+	Task              TaskRef           `json:"task"`
+	TaskAssignment    TaskAssignment    `json:"task"`
+	ExternalReference ExternalReference `json:"external_reference"`
+	Invoice           InvoiceRef        `json:"invoice"`
 
 	Hours          DurationHours `json:"hours"`
 	Notes          string        `json:"notes"`
@@ -180,4 +180,19 @@ type TimeEntry struct {
 func (h *Harvest) GetTimeEntries(p *TimeEntriesParams) (*TimeEntriesResponse, error) {
 	v := &TimeEntriesResponse{}
 	return v, h.get("/time_entries", p.Values(), v)
+}
+
+type CreateTimeEntryBody struct {
+	UserID      *int      `json:"user_id"`
+	ProjectID   int       `json:"project_id"`
+	TaskID      int       `json:"task_id"`
+	SpentDate   Date      `json:"spent_date"`
+	StartedTime *DateTime `json:"started_time"`
+	EndedTime   *DateTime `json:"ended_time"`
+	Notes       *string   `json:"notes"`
+}
+
+func (h *Harvest) CreateTimeEntry(p *CreateTimeEntryBody) (*TimeEntry, error) {
+	v := &TimeEntry{}
+	return v, h.post("/time_entries", nil, p, v)
 }

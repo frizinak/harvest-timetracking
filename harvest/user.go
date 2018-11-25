@@ -34,8 +34,31 @@ func (u *UsersParams) Values() url.Values {
 	return v
 }
 
+type UserAssignmentParams struct {
+	UpdatedSince *time.Time
+	Page         *int
+	PerPage      *int
+}
+
+func (u *UserAssignmentParams) Values() url.Values {
+	v := make(url.Values)
+	v.Set("page", "1")
+
+	if u.UpdatedSince != nil {
+		v.Set("updated_since", u.UpdatedSince.Format(TimeFormatDateTime))
+	}
+	if u.Page != nil {
+		v.Set("page", strconv.Itoa(*u.Page))
+	}
+	if u.PerPage != nil {
+		v.Set("per_page", strconv.Itoa(*u.PerPage))
+	}
+
+	return v
+}
+
 type UsersResponse struct {
-	NextPage     int     `json:"next_page"`
+	NextPage     *int    `json:"next_page"`
 	TotalEntries int     `json:"total_entries"`
 	Page         int     `json:"page"`
 	Users        []*User `json:"users"`
@@ -65,6 +88,20 @@ type User struct {
 	UpdatedAt           *DateTime `json:"updated_at"`
 }
 
+type UserAssignmentsResponse struct {
+	NextPage     *int              `json:"next_page"`
+	TotalEntries int               `json:"total_entries"`
+	Page         int               `json:"page"`
+	Assignments  []*UserAssignment `json:"project_assignments"`
+}
+
+type UserAssignment struct {
+	UserAssignmentRef
+	Project         *ProjectRef       `json:"project"`
+	Client          *ClientRef        `json:"client"`
+	TaskAssignments []*TaskAssignment `json:"task_assignments"`
+}
+
 func (u *User) Capacity() time.Duration {
 	return time.Duration(u.WeeklyCapacity) * time.Second
 }
@@ -82,4 +119,9 @@ func (h *Harvest) GetMe() (*User, error) {
 func (h *Harvest) GetUser(id int) (*User, error) {
 	v := &User{}
 	return v, h.get(fmt.Sprintf("/users/%d", id), nil, v)
+}
+
+func (h *Harvest) GetUserAssignments(userID int, p *UserAssignmentParams) (*UserAssignmentsResponse, error) {
+	v := &UserAssignmentsResponse{}
+	return v, h.get(fmt.Sprintf("/users/%d/project_assignments", userID), p.Values(), v)
 }

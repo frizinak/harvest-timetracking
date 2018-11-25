@@ -49,7 +49,8 @@ func (c *ConfigLoader) Read(v Config) error {
 }
 
 func (c *ConfigLoader) Create(v Config) error {
-	file, err := os.Create(c.path)
+	tmp := c.path + ".tmp"
+	file, err := os.Create(tmp)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,10 @@ func (c *ConfigLoader) Create(v Config) error {
 
 	e := json.NewEncoder(file)
 	e.SetIndent("", "    ")
-	return e.Encode(v)
+	if err := e.Encode(v); err != nil {
+		return err
+	}
+	return os.Rename(tmp, c.path)
 }
 
 func (c *ConfigLoader) CreateDefault() error {

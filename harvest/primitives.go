@@ -44,6 +44,10 @@ func (d *Date) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+func (d *Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Format(TimeFormatDate))
+}
+
 type DateTime struct {
 	time.Time
 }
@@ -54,6 +58,10 @@ func (d *DateTime) UnmarshalJSON(b []byte) error {
 		*d = DateTime{*nd}
 	}
 	return err
+}
+
+func (d *DateTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Format(TimeFormatDateTime))
 }
 
 type DurationSeconds struct {
@@ -121,11 +129,11 @@ type ProjectRef struct {
 	Code string `json:"code"`
 }
 
-type UserAssignment struct {
+type UserAssignmentRef struct {
 	ID             int       `json:"id"`
 	ProjectManager bool      `json:"is_project_manager"`
 	Active         bool      `json:"is_active"`
-	Budget         *Budget   `json:"budget"`
+	Budget         Budget    `json:"budget"`
 	CreatedAt      *DateTime `json:"created_at"`
 	UpdatedAt      *DateTime `json:"updated_at"`
 	HourlyRate     float64   `json:"hourly_rate"`
@@ -138,7 +146,8 @@ type TaskAssignment struct {
 	CreatedAt  *DateTime `json:"created_at"`
 	UpdatedAt  *DateTime `json:"updated_at"`
 	HourlyRate float64   `json:"hourly_rate"`
-	Budget     *Budget   `json:"budget"`
+	Budget     Budget    `json:"budget"`
+	Task       TaskRef   `json:"task"`
 }
 
 type TaskRef struct {
