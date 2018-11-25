@@ -87,7 +87,7 @@ Total: 42h32 / 76h00 (55.97%)
 
 How many hours have I tracked in the last 5 days on which I actually worked?
 ```
-$> timetracking tracking -days 5
+$> timetracking tracking -days 5 -worked
 Running for Bob
 ID: 123456
 Week: 38h00
