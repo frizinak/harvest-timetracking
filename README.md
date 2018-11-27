@@ -10,14 +10,14 @@ Harvest API library and a set of commands
 {
     "account_id": "654321",
     "token": "abc-token-lala",
-    "forecast_account_id: "",
+    "forecast_account_id": "",
     "weekdays_off": [
         "saturday",
         "sunday"
     ],
     "exclude_dates": [
         "2018-11-01",
-        "2018-07-04",
+        "2018-07-04"
     ]
 }
 ```
